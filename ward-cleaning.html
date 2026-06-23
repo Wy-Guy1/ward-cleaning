@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ward Cleaning Coordinator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1B2A4A;
+    --gold: #C9A84C;
+    --gold-light: #F5EDD6;
+    --stone: #E8E4DC;
+    --sage: #6B8F71;
+    --sage-light: #E6F0E7;
+    --bg: #FAFAF8;
+    --white: #FFFFFF;
+    --text: #1B2A4A;
+    --text-muted: #6B7280;
+    --border: #E0DCD4;
+    --red: #C0392B;
+    --red-light: #FDECEA;
+  }
+
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; }
+
+  /* LOGIN */
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--navy); }
+  .login-card { background: var(--white); border-radius: 16px; padding: 48px 40px; width: 100%; max-width: 380px; text-align: center; }
+  .login-icon { margin-bottom: 20px; display: flex; justify-content: center; }
+  .login-title { font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .login-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; letter-spacing: 0.02em; }
+  .login-card input { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; font-family: 'Inter', sans-serif; outline: none; margin-bottom: 12px; transition: border-color 0.2s; }
+  .login-card input:focus { border-color: var(--navy); }
+  .btn-primary { width: 100%; padding: 14px; background: var(--navy); color: var(--white); border: none; border-radius: 10px; font-size: 15px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; transition: opacity 0.2s; }
+  .btn-primary:hover { opacity: 0.88; }
+  .login-error { color: var(--red); font-size: 13px; margin-top: 10px; display: none; }
+
+  /* APP SHELL */
+  #app { display: none; min-height: 100vh; padding-bottom: 80px; }
+  .app-header { background: var(--navy); color: var(--white); padding: 18px 20px 16px; position: sticky; top: 0; z-index: 100; }
+  .app-header h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.01em; }
+  .app-header p { font-size: 12px; opacity: 0.65; margin-top: 2px; }
+
+  /* BOTTOM NAV */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); border-top: 1px solid var(--border); display: flex; z-index: 100; }
+  .nav-btn { flex: 1; padding: 12px 4px 10px; background: none; border: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 500; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 4px; transition: color 0.15s; letter-spacing: 0.03em; }
+  .nav-btn .icon { font-size: 20px; line-height: 1; }
+  .nav-btn.active { color: var(--navy); }
+  .nav-btn.active .icon { transform: scale(1.1); }
+
+  /* PAGES */
+  .page { display: none; padding: 20px; max-width: 680px; margin: 0 auto; }
+  .page.active { display: block; }
+  .page-title { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+
+  /* ROSTER */
+  .roster-toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .roster-toolbar input { flex: 1; min-width: 140px; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; }
+  .roster-toolbar input:focus { border-color: var(--navy); }
+  .btn-add { padding: 11px 18px; background: var(--navy); color: var(--white); border: none; border-radius: 10px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; white-space: nowrap; }
+  .btn-secondary { padding: 11px 16px; background: none; border: 1.5px solid var(--navy); color: var(--navy); border-radius: 10px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; white-space: nowrap; }
+  .btn-secondary:hover { background: var(--navy); color: var(--white); }
+  .roster-count { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+
+  /* IMPORT BANNER */
+  .import-banner { background: var(--gold-light); border: 1.5px solid var(--gold); border-radius: 12px; padding: 16px 18px; margin-bottom: 18px; }
+  .import-banner-title { font-size: 14px; font-weight: 700; color: #8B6914; margin-bottom: 4px; }
+  .import-banner-sub { font-size: 13px; color: #8B6914; line-height: 1.5; margin-bottom: 12px; }
+  .import-result { font-size: 13px; margin-top: 10px; font-weight: 600; display: none; }
+  .import-result.success { color: var(--sage); }
+  .import-result.error { color: var(--red); }
+
+  /* MEMBER CARDS */
+  .member-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .member-info { flex: 1; min-width: 0; }
+  .member-name { font-weight: 600; font-size: 15px; color: var(--navy); }
+  .member-phone { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .member-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; }
+  .badge-backup { background: var(--gold-light); color: #8B6914; }
+  .member-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-icon { padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: none; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; color: var(--text-muted); transition: all 0.15s; }
+  .btn-icon:hover { border-color: var(--navy); color: var(--navy); }
+  .btn-icon.danger:hover { border-color: var(--red); color: var(--red); }
+
+  /* SCHEDULE */
+  .schedule-toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .btn-autoschedule { padding: 12px 20px; background: var(--gold); color: var(--navy); border: none; border-radius: 10px; font-size: 14px; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; transition: opacity 0.2s; }
+  .btn-autoschedule:hover { opacity: 0.88; }
+  .btn-clear-schedule { padding: 12px 16px; background: none; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; cursor: pointer; color: var(--text-muted); }
+  .btn-clear-schedule:hover { border-color: var(--red); color: var(--red); }
+  .schedule-summary { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; margin-bottom: 18px; font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+  .schedule-summary strong { color: var(--navy); }
+
+  .saturday-card { background: var(--white); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 14px; transition: border-left-color 0.2s; }
+  .saturday-card.full { border-left-color: var(--sage); }
+  .saturday-card.partial { border-left-color: var(--gold); }
+  .saturday-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .saturday-date { font-weight: 700; font-size: 16px; color: var(--navy); }
+  .saturday-count { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: var(--stone); color: var(--text-muted); }
+  .saturday-count.full { background: var(--sage-light); color: var(--sage); }
+  .slots-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
+  .slot { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 14px; }
+  .slot.filled { background: var(--sage-light); color: var(--navy); }
+  .slot.empty { background: var(--stone); color: var(--text-muted); font-style: italic; cursor: pointer; }
+  .slot-family { font-weight: 500; }
+  .slot-count { font-size: 12px; color: var(--text-muted); }
+  .backup-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .backup-slot { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 8px; background: var(--gold-light); margin-bottom: 6px; font-size: 13px; color: #8B6914; font-weight: 500; }
+  .btn-assign { padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--white); font-size: 12px; font-family: 'Inter', sans-serif; cursor: pointer; color: var(--text-muted); }
+  .btn-assign:hover { border-color: var(--navy); color: var(--navy); }
+  .btn-remove-slot { padding: 3px 8px; background: none; border: none; cursor: pointer; font-size: 14px; color: var(--text-muted); line-height: 1; }
+
+  /* REMINDERS */
+  .reminder-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .reminder-week { font-weight: 700; font-size: 16px; color: var(--navy); margin-bottom: 16px; }
+  .reminder-block { margin-bottom: 16px; }
+  .reminder-day { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .reminder-text { background: var(--stone); border-radius: 10px; padding: 14px 16px; font-size: 14px; line-height: 1.6; color: var(--navy); white-space: pre-wrap; word-break: break-word; }
+  .btn-copy { margin-top: 8px; padding: 8px 16px; border: 1.5px solid var(--navy); border-radius: 8px; background: none; color: var(--navy); font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.15s; }
+  .btn-copy:hover { background: var(--navy); color: var(--white); }
+  .btn-copy.copied { background: var(--sage); border-color: var(--sage); color: var(--white); }
+
+  /* SETTINGS */
+  .settings-section { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .settings-title { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 16px; }
+
+  /* MODALS */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--white); border-radius: 16px; padding: 28px 24px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+  .modal-title { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+  .form-input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.2s; }
+  .form-input:focus { border-color: var(--navy); }
+  .form-select { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; background: var(--white); cursor: pointer; }
+  .checkbox-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 6px; }
+  .checkbox-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+  .checkbox-item:hover { border-color: var(--navy); }
+  .checkbox-item input { accent-color: var(--navy); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .btn-cancel { flex: 1; padding: 12px; border: 1.5px solid var(--border); border-radius: 10px; background: none; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; color: var(--text-muted); }
+  .btn-save { flex: 2; padding: 12px; background: var(--navy); color: var(--white); border: none; border-radius: 10px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; }
+
+  /* MISC */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+  .empty-state .emoji { font-size: 36px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; line-height: 1.5; }
+  .section-divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .tag-available { font-size: 11px; background: var(--sage-light); color: var(--sage); padding: 2px 7px; border-radius: 10px; font-weight: 600; margin-left: 6px; }
+  .autosched-log { background: var(--stone); border-radius: 10px; padding: 14px 16px; font-size: 13px; line-height: 1.7; color: var(--navy); margin-top: 16px; max-height: 260px; overflow-y: auto; }
+
+  @media (max-width: 480px) {
+    .checkbox-grid { grid-template-columns: 1fr; }
+    .login-card { padding: 36px 24px; }
+    .roster-toolbar { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-icon">
+      <svg width="80" height="90" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="40,2 44,18 36,18" fill="#1B2A4A"/>
+        <rect x="34" y="18" width="12" height="18" rx="1" fill="#1B2A4A"/>
+        <rect x="38" y="20" width="4" height="10" rx="1" fill="#FAFAF8"/>
+        <rect x="35" y="23" width="10" height="3" rx="1" fill="#FAFAF8"/>
+        <rect x="28" y="36" width="24" height="4" rx="1" fill="#1B2A4A"/>
+        <polygon points="40,30 72,50 8,50" fill="#1B2A4A"/>
+        <rect x="10" y="50" width="60" height="34" rx="2" fill="#1B2A4A"/>
+        <rect x="34" y="62" width="12" height="22" rx="6" fill="#FAFAF8"/>
+        <rect x="16" y="57" width="10" height="14" rx="3" fill="#FAFAF8"/>
+        <rect x="54" y="57" width="10" height="14" rx="3" fill="#FAFAF8"/>
+        <rect x="6" y="84" width="68" height="4" rx="2" fill="#1B2A4A"/>
+      </svg>
+    </div>
+    <div class="login-title">Ward Cleaning Coordinator</div>
+    <div class="login-subtitle">LEHI 34TH WARD</div>
+    <input type="password" id="password-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn-primary" onclick="login()">Sign In</button>
+    <div class="login-error" id="login-error">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="app-header">
+    <h1>Ward Cleaning Coordinator</h1>
+    <p id="header-sub">Lehi 34th Ward · July – September 2026</p>
+  </div>
+
+  <!-- ROSTER PAGE -->
+  <div class="page active" id="page-roster">
+    <div style="height:20px"></div>
+    <div class="page-title">Roster</div>
+    <div class="page-sub">Families who have volunteered to help. Import from Google Sheets or add manually.</div>
+
+    <div class="import-banner">
+      <div class="import-banner-title">Import from Google Sheets</div>
+      <div class="import-banner-sub">Export your Google Sheet as a CSV file, then import it here. The app will read your roster automatically.</div>
+      <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="handleCSVImport(this)">
+      <button class="btn-secondary" style="font-size:13px;padding:9px 16px" onclick="document.getElementById('csv-file-input').click()">Choose CSV File</button>
+      <div class="import-result" id="import-result"></div>
+    </div>
+
+    <div class="roster-toolbar">
+      <input type="text" id="search-roster" placeholder="Search families..." oninput="renderRoster()">
+      <button class="btn-add" onclick="openAddMember()">+ Add Manually</button>
+    </div>
+
+    <div id="roster-count" class="roster-count"></div>
+    <div id="roster-list"></div>
+  </div>
+
+  <!-- SCHEDULE PAGE -->
+  <div class="page" id="page-schedule">
+    <div style="height:20px"></div>
+    <div class="page-title">Schedule</div>
+    <div class="page-sub">Auto-schedule fills all 13 Saturdays based on availability. You can adjust manually after.</div>
+
+    <div class="schedule-toolbar">
+      <button class="btn-autoschedule" onclick="runAutoSchedule()">⚡ Auto-Schedule</button>
+      <button class="btn-clear-schedule" onclick="clearSchedule()">Clear Schedule</button>
+    </div>
+
+    <div id="schedule-summary" style="display:none" class="schedule-summary"></div>
+    <div id="schedule-list"></div>
+  </div>
+
+  <!-- REMINDERS PAGE -->
+  <div class="page" id="page-reminders">
+    <div style="height:20px"></div>
+    <div class="page-title">Reminders</div>
+    <div class="page-sub">Copy and send these texts to assigned families each week.</div>
+    <div id="reminders-list"></div>
+  </div>
+
+  <!-- SETTINGS PAGE -->
+  <div class="page" id="page-settings">
+    <div style="height:20px"></div>
+    <div class="page-title">Settings</div>
+    <div class="page-sub">Coordinator details and app preferences.</div>
+
+    <div class="settings-section">
+      <div class="settings-title">Ward Name</div>
+      <input class="form-input" id="ward-name-input" placeholder="e.g. Lehi 34th Ward" oninput="saveSettings()">
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Coordinator Name</div>
+      <input class="form-input" id="coordinator-name-input" placeholder="Your name" oninput="saveSettings()">
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Cleaning Start Time</div>
+      <input class="form-input" id="cleaning-time-input" placeholder="e.g. 8:00 AM" oninput="saveSettings()">
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Change Password</div>
+      <input class="form-input" id="new-password-input" type="password" placeholder="New password" style="margin-bottom:10px">
+      <button class="btn-primary" onclick="changePassword()" style="width:auto;padding:10px 20px">Update Password</button>
+      <div id="password-msg" style="font-size:13px;margin-top:8px;color:var(--sage);display:none">Password updated.</div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">CSV Column Reference</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.8">
+        Your Google Sheet must have these exact column headers:<br>
+        <code style="font-size:12px;background:var(--stone);padding:2px 6px;border-radius:4px">Family Name</code>
+        <code style="font-size:12px;background:var(--stone);padding:2px 6px;border-radius:4px">Primary Contact Name</code>
+        <code style="font-size:12px;background:var(--stone);padding:2px 6px;border-radius:4px">Phone Number</code>
+        <code style="font-size:12px;background:var(--stone);padding:2px 6px;border-radius:4px">Family Members Helping</code>
+        <code style="font-size:12px;background:var(--stone);padding:2px 6px;border-radius:4px">Saturday 1</code>
+        <code style="font-size:12px;background:var(--stone);padding:2px 6px;border-radius:4px">Saturday 2</code>
+        <code style="font-size:12px;background:var(--stone);padding:2px 6px;border-radius:4px">Saturday 3</code>
+        <code style="font-size:12px;background:var(--stone);padding:2px 6px;border-radius:4px">Saturday 4</code>
+        <code style="font-size:12px;background:var(--stone);padding:2px 6px;border-radius:4px">Backup Willing</code>
+        <code style="font-size:12px;background:var(--stone);padding:2px 6px;border-radius:4px">Notes</code>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Data</div>
+      <button class="btn-icon" onclick="exportData()" style="margin-right:8px">Export Backup</button>
+      <button class="btn-icon danger" onclick="clearAllData()">Clear All Data</button>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="showPage('roster',this)"><span class="icon">👥</span>Roster</button>
+    <button class="nav-btn" onclick="showPage('schedule',this)"><span class="icon">📅</span>Schedule</button>
+    <button class="nav-btn" onclick="showPage('reminders',this)"><span class="icon">💬</span>Reminders</button>
+    <button class="nav-btn" onclick="showPage('settings',this)"><span class="icon">⚙️</span>Settings</button>
+  </nav>
+</div>
+
+<!-- ADD/EDIT MEMBER MODAL -->
+<div class="modal-overlay" id="member-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Add Family</div>
+    <div class="form-group">
+      <label class="form-label">Family / Individual Name</label>
+      <input class="form-input" id="m-name" placeholder="e.g. Peterson Family">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Primary Contact Name</label>
+      <input class="form-input" id="m-contact" placeholder="First and last name">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Phone Number</label>
+      <input class="form-input" id="m-phone" placeholder="(801) 555-0000" type="tel">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Family Members Available to Help</label>
+      <input class="form-input" id="m-count" placeholder="e.g. 3" type="number" min="1" max="20">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Role</label>
+      <select class="form-select" id="m-role">
+        <option value="primary">Primary Volunteer</option>
+        <option value="backup">Backup Only</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Available Saturdays</label>
+      <div class="checkbox-grid" id="availability-grid"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <input class="form-input" id="m-notes" placeholder="Any scheduling notes...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('member-modal')">Cancel</button>
+      <button class="btn-save" onclick="saveMember()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ASSIGN FAMILY MODAL -->
+<div class="modal-overlay" id="assign-modal">
+  <div class="modal">
+    <div class="modal-title" id="assign-modal-title">Assign Family</div>
+    <div id="assign-list"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('assign-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTO-SCHEDULE RESULT MODAL -->
+<div class="modal-overlay" id="autosched-modal">
+  <div class="modal">
+    <div class="modal-title">Schedule Generated</div>
+    <div id="autosched-log" class="autosched-log"></div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="closeModal('autosched-modal');renderSchedule()">View Schedule</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────────────
+const APP_PASSWORD_KEY = 'wcc_password';
+const DATA_KEY = 'wcc_data';
+const DEFAULT_PASSWORD = 'ward2026';
+
+const SATURDAYS = [
+  'July 4', 'July 11', 'July 18', 'July 25',
+  'August 1', 'August 8', 'August 15', 'August 22', 'August 29',
+  'September 5', 'September 12', 'September 19', 'September 26'
+];
+
+// Exact CSV column headers — must match Google Form question titles exactly
+const CSV_COLUMNS = {
+  familyName: 'Family Name',
+  contact: 'Primary Contact Name',
+  phone: 'Phone Number',
+  count: 'Family Members Helping',
+  sat1: 'Saturday 1',
+  sat2: 'Saturday 2',
+  sat3: 'Saturday 3',
+  sat4: 'Saturday 4',
+  backup: 'Backup Willing',
+  notes: 'Notes'
+};
+
+// ─── DATA ────────────────────────────────────────────────────────
+function getPassword() { return localStorage.getItem(APP_PASSWORD_KEY) || DEFAULT_PASSWORD; }
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(DATA_KEY)) || { members: [], schedule: {}, settings: {} }; }
+  catch { return { members: [], schedule: {}, settings: {} }; }
+}
+function saveData(data) { localStorage.setItem(DATA_KEY, JSON.stringify(data)); }
+
+let appData = loadData();
+let editingMemberId = null;
+let assigningDate = null;
+let assigningType = null;
+
+// ─── AUTH ────────────────────────────────────────────────────────
+function login() {
+  const val = document.getElementById('password-input').value;
+  if (val === getPassword()) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadSettings();
+    renderRoster();
+    renderSchedule();
+    renderReminders();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function changePassword() {
+  const np = document.getElementById('new-password-input').value.trim();
+  if (!np) return;
+  localStorage.setItem(APP_PASSWORD_KEY, np);
+  document.getElementById('new-password-input').value = '';
+  const msg = document.getElementById('password-msg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2500);
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'schedule') renderSchedule();
+  if (name === 'reminders') renderReminders();
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────
+function loadSettings() {
+  const s = appData.settings || {};
+  if (s.wardName) document.getElementById('ward-name-input').value = s.wardName;
+  if (s.coordinator) document.getElementById('coordinator-name-input').value = s.coordinator;
+  if (s.cleaningTime) document.getElementById('cleaning-time-input').value = s.cleaningTime;
+  const wn = s.wardName || 'Lehi 34th Ward';
+  document.getElementById('header-sub').textContent = wn + ' · July – September 2026';
+}
+
+function saveSettings() {
+  appData.settings = appData.settings || {};
+  appData.settings.wardName = document.getElementById('ward-name-input').value;
+  appData.settings.coordinator = document.getElementById('coordinator-name-input').value;
+  appData.settings.cleaningTime = document.getElementById('cleaning-time-input').value;
+  const wn = appData.settings.wardName || 'Lehi 34th Ward';
+  document.getElementById('header-sub').textContent = wn + ' · July – September 2026';
+  saveData(appData);
+}
+
+// ─── CSV IMPORT ───────────────────────────────────────────────────
+function handleCSVImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const result = parseCSV(e.target.result);
+      showImportResult(result);
+    } catch (err) {
+      showImportResult({ success: false, message: 'Could not read file. Make sure it is a CSV exported from Google Sheets.' });
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return { success: false, message: 'File appears to be empty.' };
+
+  // Parse headers — handle quoted fields
+  const headers = parseCSVRow(lines[0]);
+
+  // Verify required columns exist
+  const required = Object.values(CSV_COLUMNS);
+  const missing = required.filter(col => !headers.includes(col));
+  if (missing.length > 0) {
+    return { success: false, message: `Missing columns: ${missing.join(', ')}. Check your Google Sheet headers match exactly.` };
+  }
+
+  const idx = {};
+  Object.entries(CSV_COLUMNS).forEach(([key, col]) => {
+    idx[key] = headers.indexOf(col);
+  });
+
+  let added = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (let i = 1; i < lines.length; i++) {
+    const row = parseCSVRow(lines[i]);
+    if (row.length < 2) continue;
+
+    const name = (row[idx.familyName] || '').trim();
+    if (!name) { skipped++; continue; }
+
+    // Collect availability from Saturday 1-4 columns
+    const availability = [
+      row[idx.sat1], row[idx.sat2], row[idx.sat3], row[idx.sat4]
+    ]
+      .map(v => (v || '').trim())
+      .filter(v => v && SATURDAYS.includes(v));
+
+    // Backup willing: Yes = backup eligible
+    const backupVal = (row[idx.backup] || '').trim().toLowerCase();
+    const role = (backupVal === 'yes') ? 'backup' : 'primary';
+
+    const memberData = {
+      name,
+      contact: (row[idx.contact] || '').trim(),
+      phone: (row[idx.phone] || '').trim(),
+      count: (row[idx.count] || '').trim(),
+      role,
+      notes: (row[idx.notes] || '').trim(),
+      availability
+    };
+
+    // Check if family already exists (by name match)
+    const existing = appData.members.findIndex(m => m.name.toLowerCase() === name.toLowerCase());
+    if (existing !== -1) {
+      appData.members[existing] = { ...appData.members[existing], ...memberData };
+      updated++;
+    } else {
+      memberData.id = 'id_' + Date.now() + '_' + i;
+      appData.members.push(memberData);
+      added++;
+    }
+  }
+
+  saveData(appData);
+  renderRoster();
+
+  return {
+    success: true,
+    message: `Import complete. ${added} families added, ${updated} updated${skipped ? ', ' + skipped + ' skipped' : ''}.`
+  };
+}
+
+function parseCSVRow(line) {
+  // Handles quoted fields with commas inside
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function showImportResult(result) {
+  const el = document.getElementById('import-result');
+  el.style.display = 'block';
+  el.className = 'import-result ' + (result.success ? 'success' : 'error');
+  el.textContent = result.message;
+  if (result.success) setTimeout(() => el.style.display = 'none', 4000);
+}
+
+// ─── ROSTER ──────────────────────────────────────────────────────
+function renderRoster() {
+  const search = document.getElementById('search-roster').value.toLowerCase();
+  const list = document.getElementById('roster-list');
+  const members = appData.members.filter(m =>
+    m.name.toLowerCase().includes(search) ||
+    (m.contact || '').toLowerCase().includes(search)
+  );
+
+  const primaryCount = appData.members.filter(m => m.role !== 'backup').length;
+  const backupCount = appData.members.filter(m => m.role === 'backup').length;
+  document.getElementById('roster-count').textContent =
+    `${appData.members.length} total — ${primaryCount} primary, ${backupCount} backup`;
+
+  if (!members.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="emoji">👥</div>
+      <p>${appData.members.length === 0 ? 'No families yet. Import a CSV or tap "+ Add Manually".' : 'No results found.'}</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = members.map(m => {
+    const avail = (m.availability || []).length;
+    // Count how many times scheduled
+    let scheduledCount = 0;
+    SATURDAYS.forEach(sat => {
+      const s = appData.schedule[sat];
+      if (s && (s.primary || []).find(x => x.id === m.id)) scheduledCount++;
+    });
+    return `<div class="member-card">
+      <div class="member-info">
+        <div class="member-name">${m.name}
+          ${m.role === 'backup' ? '<span class="badge badge-backup">Backup</span>' : ''}
+        </div>
+        <div class="member-phone">${m.contact || ''}${m.phone ? ' · ' + m.phone : ''}</div>
+        <div class="member-meta">
+          ${m.count ? m.count + ' can help' : ''}
+          ${avail ? ' · ' + avail + ' Saturday' + (avail !== 1 ? 's' : '') + ' available' : ''}
+          ${scheduledCount ? ' · Scheduled ' + scheduledCount + 'x' : ''}
+          ${m.notes ? '<br>' + m.notes : ''}
+        </div>
+      </div>
+      <div class="member-actions">
+        <button class="btn-icon" onclick="openEditMember('${m.id}')">Edit</button>
+        <button class="btn-icon danger" onclick="removeMember('${m.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAddMember() {
+  editingMemberId = null;
+  document.getElementById('modal-title').textContent = 'Add Family';
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-contact').value = '';
+  document.getElementById('m-phone').value = '';
+  document.getElementById('m-count').value = '';
+  document.getElementById('m-role').value = 'primary';
+  document.getElementById('m-notes').value = '';
+  buildAvailabilityGrid([]);
+  document.getElementById('member-modal').classList.add('open');
+}
+
+function openEditMember(id) {
+  const m = appData.members.find(x => x.id === id);
+  if (!m) return;
+  editingMemberId = id;
+  document.getElementById('modal-title').textContent = 'Edit Family';
+  document.getElementById('m-name').value = m.name || '';
+  document.getElementById('m-contact').value = m.contact || '';
+  document.getElementById('m-phone').value = m.phone || '';
+  document.getElementById('m-count').value = m.count || '';
+  document.getElementById('m-role').value = m.role || 'primary';
+  document.getElementById('m-notes').value = m.notes || '';
+  buildAvailabilityGrid(m.availability || []);
+  document.getElementById('member-modal').classList.add('open');
+}
+
+function buildAvailabilityGrid(selected) {
+  const grid = document.getElementById('availability-grid');
+  grid.innerHTML = SATURDAYS.map(sat => `
+    <label class="checkbox-item">
+      <input type="checkbox" value="${sat}" ${selected.includes(sat) ? 'checked' : ''}>
+      ${sat}
+    </label>
+  `).join('');
+}
+
+function saveMember() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { alert('Please enter a family name.'); return; }
+  const availability = Array.from(
+    document.querySelectorAll('#availability-grid input:checked')
+  ).map(c => c.value);
+
+  const memberData = {
+    name,
+    contact: document.getElementById('m-contact').value.trim(),
+    phone: document.getElementById('m-phone').value.trim(),
+    count: document.getElementById('m-count').value.trim(),
+    role: document.getElementById('m-role').value,
+    notes: document.getElementById('m-notes').value.trim(),
+    availability
+  };
+
+  if (editingMemberId) {
+    const idx = appData.members.findIndex(m => m.id === editingMemberId);
+    if (idx !== -1) appData.members[idx] = { ...appData.members[idx], ...memberData };
+  } else {
+    memberData.id = 'id_' + Date.now();
+    appData.members.push(memberData);
+  }
+
+  saveData(appData);
+  closeModal('member-modal');
+  renderRoster();
+}
+
+function removeMember(id) {
+  if (!confirm('Remove this family from the roster?')) return;
+  appData.members = appData.members.filter(m => m.id !== id);
+  SATURDAYS.forEach(sat => {
+    const s = appData.schedule[sat];
+    if (s) {
+      s.primary = (s.primary || []).filter(x => x.id !== id);
+      s.backup = (s.backup || []).filter(x => x.id !== id);
+    }
+  });
+  saveData(appData);
+  renderRoster();
+  renderSchedule();
+}
+
+// ─── AUTO-SCHEDULER ───────────────────────────────────────────────
+function runAutoSchedule() {
+  const primaryMembers = appData.members.filter(m => m.role !== 'backup');
+  const backupMembers = appData.members.filter(m => m.role === 'backup');
+
+  if (primaryMembers.length === 0) {
+    alert('No primary families on the roster yet. Add families first.');
+    return;
+  }
+
+  if (!confirm('This will replace the current schedule. Continue?')) return;
+
+  // Reset schedule
+  const schedule = {};
+  SATURDAYS.forEach(sat => schedule[sat] = { primary: [], backup: [] });
+
+  // Track how many times each family is scheduled (max 2)
+  const scheduledCount = {};
+  appData.members.forEach(m => scheduledCount[m.id] = 0);
+
+  const log = [];
+
+  // Shuffle members for fairness
+  const shuffled = [...primaryMembers].sort(() => Math.random() - 0.5);
+
+  // For each Saturday, pick up to 5 available families (max 2x total)
+  SATURDAYS.forEach(sat => {
+    // Candidates: available this Saturday, not yet at max 2
+    let candidates = shuffled.filter(m =>
+      (m.availability || []).includes(sat) &&
+      scheduledCount[m.id] < 2
+    );
+
+    // Sort by how many times scheduled so far (prefer less-scheduled families)
+    candidates.sort((a, b) => scheduledCount[a.id] - scheduledCount[b.id]);
+
+    const picked = candidates.slice(0, 5);
+    picked.forEach(m => {
+      schedule[sat].primary.push({ id: m.id, name: m.name, phone: m.phone, count: m.count });
+      scheduledCount[m.id]++;
+    });
+
+    // Assign backup families who are available this Saturday
+    const backupCandidates = backupMembers.filter(m =>
+      (m.availability || []).includes(sat)
+    );
+    backupCandidates.forEach(m => {
+      schedule[sat].backup.push({ id: m.id, name: m.name, phone: m.phone, count: m.count });
+    });
+
+    const filled = picked.length;
+    const flag = filled < 5 ? ' ⚠ Only ' + filled + '/5 families available' : ' ✓';
+    log.push(`${sat}: ${filled}/5 families assigned${flag}`);
+  });
+
+  // Check for families never scheduled
+  const unscheduled = primaryMembers.filter(m => scheduledCount[m.id] === 0);
+  if (unscheduled.length > 0) {
+    log.push('');
+    log.push('Families with no matching Saturdays:');
+    unscheduled.forEach(m => log.push('  · ' + m.name + ' — check their availability'));
+  }
+
+  // Summary stats
+  const totalAssignments = Object.values(scheduledCount).reduce((a, b) => a + b, 0);
+  log.push('');
+  log.push(`Total assignments: ${totalAssignments} across ${primaryMembers.length} families`);
+
+  appData.schedule = schedule;
+  saveData(appData);
+
+  document.getElementById('autosched-log').innerHTML = log.map(l =>
+    `<div style="padding:1px 0;${l.includes('⚠') ? 'color:var(--red)' : l.includes('✓') ? 'color:var(--sage)' : ''}">${l}</div>`
+  ).join('');
+  document.getElementById('autosched-modal').classList.add('open');
+
+  renderRoster(); // refresh scheduled count badges
+}
+
+function clearSchedule() {
+  if (!confirm('Clear the entire schedule? Roster will not be affected.')) return;
+  SATURDAYS.forEach(sat => appData.schedule[sat] = { primary: [], backup: [] });
+  saveData(appData);
+  renderSchedule();
+}
+
+// ─── SCHEDULE RENDER ─────────────────────────────────────────────
+function renderSchedule() {
+  const list = document.getElementById('schedule-list');
+
+  // Summary
+  const totalSlots = SATURDAYS.length * 5;
+  const filledSlots = SATURDAYS.reduce((sum, sat) => sum + ((appData.schedule[sat] || {}).primary || []).length, 0);
+  const fullWeeks = SATURDAYS.filter(sat => ((appData.schedule[sat] || {}).primary || []).length >= 5).length;
+
+  if (filledSlots > 0) {
+    document.getElementById('schedule-summary').style.display = 'block';
+    document.getElementById('schedule-summary').innerHTML =
+      `<strong>${filledSlots}</strong> of ${totalSlots} slots filled &nbsp;·&nbsp; <strong>${fullWeeks}</strong> of ${SATURDAYS.length} weeks full`;
+  } else {
+    document.getElementById('schedule-summary').style.display = 'none';
+  }
+
+  list.innerHTML = SATURDAYS.map(sat => {
+    const s = appData.schedule[sat] || { primary: [], backup: [] };
+    const primaryCount = (s.primary || []).length;
+    const isFull = primaryCount >= 5;
+
+    const primarySlots = [];
+    for (let i = 0; i < 5; i++) {
+      const fam = (s.primary || [])[i];
+      if (fam) {
+        primarySlots.push(`<div class="slot filled">
+          <span class="slot-family">${fam.name}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="slot-count">${fam.count ? fam.count + ' helping' : ''}</span>
+            <button class="btn-remove-slot" onclick="removeFromSchedule('${sat}','primary',${i})">✕</button>
+          </div>
+        </div>`);
+      } else {
+        primarySlots.push(`<div class="slot empty" onclick="openAssign('${sat}','primary')">
+          <span>Open slot — tap to assign</span>
+        </div>`);
+      }
+    }
+
+    const backupSlots = (s.backup || []).map((fam, i) =>
+      `<div class="backup-slot">
+        <span>${fam.name}</span>
+        <button class="btn-remove-slot" onclick="removeFromSchedule('${sat}','backup',${i})">✕</button>
+      </div>`
+    ).join('');
+
+    return `<div class="saturday-card ${isFull ? 'full' : primaryCount > 0 ? 'partial' : ''}">
+      <div class="saturday-header">
+        <div class="saturday-date">Saturday, ${sat}</div>
+        <div class="saturday-count ${isFull ? 'full' : ''}">${primaryCount}/5 families</div>
+      </div>
+      <div class="slots-label">Primary Families</div>
+      ${primarySlots.join('')}
+      <div class="backup-section">
+        <div class="slots-label">Backup</div>
+        ${backupSlots || '<div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">No backup assigned</div>'}
+        <button class="btn-assign" onclick="openAssign('${sat}','backup')">+ Add Backup</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAssign(sat, type) {
+  assigningDate = sat;
+  assigningType = type;
+  const s = appData.schedule[sat] || { primary: [], backup: [] };
+  const assignedIds = [...(s.primary || []), ...(s.backup || [])].map(x => x.id);
+
+  document.getElementById('assign-modal-title').textContent =
+    type === 'backup' ? `Add Backup — ${sat}` : `Assign Family — ${sat}`;
+
+  let candidates = appData.members.filter(m => {
+    if (assignedIds.includes(m.id)) return false;
+    if (type === 'primary' && m.role === 'backup') return false;
+    // For primary: warn if already scheduled twice
+    return true;
+  });
+
+  candidates.sort((a, b) => {
+    const aAvail = (a.availability || []).includes(sat);
+    const bAvail = (b.availability || []).includes(sat);
+    if (aAvail && !bAvail) return -1;
+    if (!aAvail && bAvail) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Count current schedule assignments per member
+  const counts = {};
+  SATURDAYS.forEach(s2 => {
+    ((appData.schedule[s2] || {}).primary || []).forEach(f => {
+      counts[f.id] = (counts[f.id] || 0) + 1;
+    });
+  });
+
+  if (!candidates.length) {
+    document.getElementById('assign-list').innerHTML =
+      '<div class="empty-state"><p>No families available to assign.</p></div>';
+  } else {
+    document.getElementById('assign-list').innerHTML = candidates.map(m => {
+      const isAvail = (m.availability || []).includes(sat);
+      const timesScheduled = counts[m.id] || 0;
+      const atMax = timesScheduled >= 2;
+      return `<div class="member-card" style="cursor:pointer;${atMax ? 'opacity:0.5' : ''}" onclick="${atMax ? 'alert(\'This family is already scheduled twice.\')' : `assignFamily('${m.id}')`}">
+        <div class="member-info">
+          <div class="member-name">${m.name}
+            ${isAvail ? '<span class="tag-available">Available</span>' : ''}
+            ${m.role === 'backup' ? '<span class="badge badge-backup">Backup</span>' : ''}
+            ${atMax ? '<span class="badge" style="background:var(--red-light);color:var(--red)">Max 2x reached</span>' : ''}
+          </div>
+          <div class="member-phone">${m.phone || ''}</div>
+          <div class="member-meta">${m.count ? m.count + ' can help' : ''} ${timesScheduled ? '· Scheduled ' + timesScheduled + 'x' : ''}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('assign-modal').classList.add('open');
+}
+
+function assignFamily(id) {
+  const member = appData.members.find(m => m.id === id);
+  if (!member) return;
+  if (!appData.schedule[assigningDate]) appData.schedule[assigningDate] = { primary: [], backup: [] };
+  const s = appData.schedule[assigningDate];
+  if (assigningType === 'primary' && (s.primary || []).length >= 5) {
+    alert('This Saturday already has 5 families assigned.');
+    return;
+  }
+  s[assigningType].push({ id: member.id, name: member.name, phone: member.phone, count: member.count });
+  saveData(appData);
+  closeModal('assign-modal');
+  renderSchedule();
+}
+
+function removeFromSchedule(sat, type, index) {
+  if (!appData.schedule[sat]) return;
+  appData.schedule[sat][type].splice(index, 1);
+  saveData(appData);
+  renderSchedule();
+}
+
+// ─── REMINDERS ───────────────────────────────────────────────────
+function renderReminders() {
+  const coordinator = (appData.settings && appData.settings.coordinator) || 'your coordinator';
+  const cleaningTime = (appData.settings && appData.settings.cleaningTime) || '8:00 AM';
+  const list = document.getElementById('reminders-list');
+
+  const scheduled = SATURDAYS.filter(sat => {
+    const s = appData.schedule[sat];
+    return s && ((s.primary || []).length > 0 || (s.backup || []).length > 0);
+  });
+
+  if (!scheduled.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="emoji">💬</div>
+      <p>No families scheduled yet.<br>Build your schedule first, then come back here.</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = scheduled.map(sat => {
+    const s = appData.schedule[sat];
+    const primary = s.primary || [];
+    const backup = s.backup || [];
+    const allFamilies = [...primary, ...backup];
+
+    const mondayMsg = (fam, isBackup) =>
+      `Hi ${fam.name.replace(' Family', '')} family! This is a reminder that you${isBackup ? "'re on backup for" : "'re scheduled to help clean"} the church this Saturday, ${sat}. Cleaning starts at ${cleaningTime}. We appreciate you! Feel free to reply with any questions. – ${coordinator}`;
+
+    const fridayMsg = (fam, isBackup) =>
+      `Quick reminder — church cleaning is tomorrow, Saturday ${sat} at ${cleaningTime}. ${isBackup ? "You're on backup this week — we'll reach out if we need you. " : ''}Thank you for serving! – ${coordinator}`;
+
+    return `<div class="reminder-card">
+      <div class="reminder-week">Saturday, ${sat}</div>
+      ${allFamilies.map(fam => {
+        const isBackup = !!backup.find(b => b.id === fam.id);
+        const safeId = sat.replace(/ /g,'') + fam.id;
+        return `<div class="reminder-block">
+          <div class="reminder-day">📱 ${fam.name}${isBackup ? ' (Backup)' : ''} · ${fam.phone || 'No phone on file'}</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--text-muted);text-transform:uppercase;margin:10px 0 6px">Monday Text</div>
+          <div class="reminder-text" id="mon-${safeId}">${mondayMsg(fam, isBackup)}</div>
+          <button class="btn-copy" onclick="copyText('mon-${safeId}',this)">Copy</button>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--text-muted);text-transform:uppercase;margin:14px 0 6px">Friday Text</div>
+          <div class="reminder-text" id="fri-${safeId}">${fridayMsg(fam, isBackup)}</div>
+          <button class="btn-copy" onclick="copyText('fri-${safeId}',this)">Copy</button>
+          <div class="section-divider"></div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+function copyText(id, btn) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ward-cleaning-backup.json';
+  a.click();
+}
+
+function clearAllData() {
+  if (!confirm('Clear all roster and schedule data? This cannot be undone.')) return;
+  appData = { members: [], schedule: {}, settings: appData.settings };
+  saveData(appData);
+  renderRoster();
+  renderSchedule();
+  renderReminders();
+}
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+</script>
+</body>
+</html>
